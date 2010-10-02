@@ -65,7 +65,7 @@ public class TestUtil {
 		return hibernateValidator;
 	}
 
-	public static Configuration<HibernateValidatorConfiguration> getConfiguration() {
+	public static HibernateValidatorConfiguration getConfiguration() {
 		return getConfiguration( HibernateValidator.class, Locale.ENGLISH );
 	}
 
