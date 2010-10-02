@@ -95,12 +95,19 @@ public class ValidatorImpl implements Validator {
 	 */
 	private final BeanMetaDataCache beanMetaDataCache;
 
-	public ValidatorImpl(ConstraintValidatorFactory constraintValidatorFactory, MessageInterpolator messageInterpolator, TraversableResolver traversableResolver, ConstraintHelper constraintHelper, BeanMetaDataCache beanMetaDataCache) {
+	/**
+	 * Whether or not we stop after the first encountered failure
+	 */
+	private final boolean failFast;
+
+	public ValidatorImpl(ConstraintValidatorFactory constraintValidatorFactory, MessageInterpolator messageInterpolator, TraversableResolver traversableResolver, ConstraintHelper constraintHelper, BeanMetaDataCache beanMetaDataCache, boolean failFast) {
 		this.constraintValidatorFactory = constraintValidatorFactory;
 		this.messageInterpolator = messageInterpolator;
 		this.traversableResolver = traversableResolver;
 		this.constraintHelper = constraintHelper;
 		this.beanMetaDataCache = beanMetaDataCache;
+		this.failFast = failFast;
+
 
 		groupChainGenerator = new GroupChainGenerator();
 	}
@@ -113,7 +120,7 @@ public class ValidatorImpl implements Validator {
 		GroupChain groupChain = determineGroupExecutionOrder( groups );
 
 		ValidationContext<T> context = ValidationContext.getContextForValidate(
-				object, messageInterpolator, constraintValidatorFactory, getCachingTraversableResolver()
+				object, messageInterpolator, constraintValidatorFactory, getCachingTraversableResolver(), failFast
 		);
 
 		List<ConstraintViolation<T>> list = validateInContext( object, context, groupChain, null );
@@ -208,12 +215,18 @@ public class ValidatorImpl implements Validator {
 			Group group = groupIterator.next();
 			valueContext.setCurrentGroup( group.getGroup() );
 			validateConstraintsForCurrentGroup( context, valueContext, path );
+			if ( context.shouldFailFast() ) {
+				return context.getFailingConstraints();
+			}
 		}
 		groupIterator = groupChain.getGroupIterator();
 		while ( groupIterator.hasNext() ) {
 			Group group = groupIterator.next();
 			valueContext.setCurrentGroup( group.getGroup() );
 			validateCascadedConstraints( context, valueContext, path );
+			if ( context.shouldFailFast() ) {
+				return context.getFailingConstraints();
+			}
 		}
 
 		// now we process sequences. For sequences I have to traverse the object graph since I have to stop processing when an error occurs.
@@ -225,7 +238,13 @@ public class ValidatorImpl implements Validator {
 				valueContext.setCurrentGroup( group.getGroup() );
 
 				validateConstraintsForCurrentGroup( context, valueContext, path );
+				if ( context.shouldFailFast() ) {
+					return context.getFailingConstraints();
+				}
 				validateCascadedConstraints( context, valueContext, path );
+				if ( context.shouldFailFast() ) {
+					return context.getFailingConstraints();
+				}
 
 				if ( context.getFailingConstraints().size() > numberOfViolations ) {
 					break;
@@ -274,6 +293,9 @@ public class ValidatorImpl implements Validator {
 							validationContext, valueContext, metaConstraint, path
 					);
 					validationSuccessful = validationSuccessful && tmp;
+					if ( validationContext.shouldFailFast() ) {
+						return;
+					}
 				}
 				if ( !validationSuccessful ) {
 					break;
@@ -292,6 +314,9 @@ public class ValidatorImpl implements Validator {
 						validationContext, valueContext, metaConstraint, path
 				);
 				validationSuccessful = validationSuccessful && tmp;
+				if ( validationContext.shouldFailFast() ) {
+					return;
+				}
 			}
 			if ( !validationSuccessful ) {
 				break;
@@ -303,6 +328,9 @@ public class ValidatorImpl implements Validator {
 		BeanMetaData<U> beanMetaData = getBeanMetaData( valueContext.getCurrentBeanType() );
 		for ( MetaConstraint<U, ? extends Annotation> metaConstraint : beanMetaData.getMetaConstraintsAsList() ) {
 			validateConstraint( validationContext, valueContext, metaConstraint, path );
+			if ( validationContext.shouldFailFast() ) {
+				return;
+			}
 		}
 	}
 
@@ -369,6 +397,9 @@ public class ValidatorImpl implements Validator {
 							valueContext.getCurrentGroup(),
 							valueContext.getPropertyPath()
 					);
+					if ( validationContext.shouldFailFast() ) {
+						return;
+					}
 				}
 			}
 		}
@@ -457,6 +488,9 @@ public class ValidatorImpl implements Validator {
 						)
 				);
 				validateInContext( value, context, groupChain, currentPath );
+				if ( context.shouldFailFast() ) {
+					return;
+				}
 			}
 			i++;
 		}
@@ -495,6 +529,9 @@ public class ValidatorImpl implements Validator {
 					group,
 					cachedResolver
 			);
+			if ( shouldFailFast(failingConstraintViolations) ) {
+				return;
+			}
 		}
 
 		Iterator<List<Group>> sequenceIterator = groupChain.getSequenceIterator();
@@ -511,12 +548,19 @@ public class ValidatorImpl implements Validator {
 						group,
 						cachedResolver
 				);
+				if ( shouldFailFast(failingConstraintViolations) ) {
+					return;
+				}
 
 				if ( failingConstraintViolations.size() > numberOfConstraintViolationsBefore ) {
 					break;
 				}
 			}
 		}
+	}
+
+	private <U> boolean shouldFailFast(List<ConstraintViolation<U>> failingConstraintViolations) {
+		return failFast && failingConstraintViolations.size() > 0;
 	}
 
 	private <T, U, V> void validatePropertyForGroup(
@@ -545,7 +589,8 @@ public class ValidatorImpl implements Validator {
 						object,
 						messageInterpolator,
 						constraintValidatorFactory,
-						cachedTraversableResolver
+						cachedTraversableResolver,
+						failFast
 				);
 				ValueContext<U, V> valueContext = ValueContext.getLocalExecutionContext(
 						hostingBeanInstance
@@ -558,6 +603,9 @@ public class ValidatorImpl implements Validator {
 					metaConstraint.validateConstraint( context, valueContext );
 					failingConstraintViolations.addAll( context.getFailingConstraints() );
 				}
+			}
+			if ( shouldFailFast(failingConstraintViolations) ) {
+				return;
 			}
 			if ( failingConstraintViolations.size() > numberOfConstraintViolationsBefore ) {
 				break;
@@ -590,6 +638,9 @@ public class ValidatorImpl implements Validator {
 					group,
 					cachedTraversableResolver
 			);
+			if ( shouldFailFast(failingConstraintViolations) ) {
+				return;
+			}
 		}
 
 		// process sequences
@@ -607,7 +658,9 @@ public class ValidatorImpl implements Validator {
 						group,
 						cachedTraversableResolver
 				);
-
+				if ( shouldFailFast(failingConstraintViolations) ) {
+					return;
+				}
 				if ( failingConstraintViolations.size() > numberOfConstraintViolations ) {
 					break;
 				}
@@ -638,7 +691,7 @@ public class ValidatorImpl implements Validator {
 		for ( Class<?> groupClass : groupList ) {
 			for ( MetaConstraint<U, ?> metaConstraint : metaConstraints ) {
 				ValidationContext<U> context = ValidationContext.getContextForValidateValue(
-						beanType, messageInterpolator, constraintValidatorFactory, cachedTraversableResolver
+						beanType, messageInterpolator, constraintValidatorFactory, cachedTraversableResolver, failFast
 				);
 				ValueContext<U, V> valueContext = ValueContext.getLocalExecutionContext( beanType );
 				valueContext.setPropertyPath( path );
@@ -647,7 +700,13 @@ public class ValidatorImpl implements Validator {
 				if ( isValidationRequired( context, valueContext, metaConstraint ) ) {
 					metaConstraint.validateConstraint( context, valueContext );
 					failingConstraintViolations.addAll( context.getFailingConstraints() );
+					if ( shouldFailFast(failingConstraintViolations) ) {
+						return;
+					}
 				}
+			}
+			if ( shouldFailFast(failingConstraintViolations) ) {
+				return;
 			}
 			if ( failingConstraintViolations.size() > numberOfConstraintViolations ) {
 				break;
@@ -742,6 +801,10 @@ public class ValidatorImpl implements Validator {
 	}
 
 	private boolean isValidationRequired(ValidationContext validationContext, ValueContext valueContext, MetaConstraint metaConstraint) {
+		if ( validationContext.shouldFailFast() ) {
+			return false;
+		}
+
 		if ( !metaConstraint.getGroupList().contains( valueContext.getCurrentGroup() ) ) {
 			return false;
 		}
@@ -773,6 +836,10 @@ public class ValidatorImpl implements Validator {
 		final ElementType type = member instanceof Field ? ElementType.FIELD : ElementType.METHOD;
 		boolean isReachable;
 		boolean isCascadable;
+
+		if ( validationContext.shouldFailFast() ) {
+			return false;
+		}
 
 		Path pathToObject = valueContext.getPropertyPath().getPathWithoutLeafNode();
 		if ( pathToObject == null ) {

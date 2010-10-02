@@ -75,6 +75,7 @@ public class ConfigurationImpl implements HibernateValidatorConfiguration, Confi
 	private boolean ignoreXmlConfiguration = false;
 	private Set<InputStream> configurationStreams = new HashSet<InputStream>();
 	private ConstraintMapping mapping;
+	private boolean failFast;
 
 	public ConfigurationImpl(BootstrapState state) {
 		if ( state.getValidationProviderResolver() == null ) {
@@ -128,6 +129,11 @@ public class ConfigurationImpl implements HibernateValidatorConfiguration, Confi
 			throw new IllegalArgumentException( "The mapping cannot be null." );
 		}
 		this.mapping = mapping;
+		return this;
+	}
+	
+	public HibernateValidatorConfiguration failFast() {
+		this.failFast = true;
 		return this;
 	}
 
@@ -292,5 +298,9 @@ public class ConfigurationImpl implements HibernateValidatorConfiguration, Confi
 				validationBootstrapParameters.configProperties.put( entry.getKey(), entry.getValue() );
 			}
 		}
+	}
+
+	public boolean getFailFast() {
+		return failFast;
 	}
 }

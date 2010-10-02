@@ -103,6 +103,9 @@ public class ConstraintTree<A extends Annotation> {
 			List<ConstraintViolation<T>> tmpViolations = new ArrayList<ConstraintViolation<T>>();
 			tree.validateConstraints( type, executionContext, valueContext, tmpViolations );
 			constraintViolations.addAll( tmpViolations );
+			if ( executionContext.shouldFailFast() && ! reportAsSingleViolation() ) {
+				return;
+			}
 		}
 
 		ConstraintValidatorContextImpl constraintValidatorContext = new ConstraintValidatorContextImpl(

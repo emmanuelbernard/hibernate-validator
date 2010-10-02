@@ -91,38 +91,45 @@ public class ValidationContext<T> {
 	 */
 	private final TraversableResolver traversableResolver;
 
-	public static <T> ValidationContext<T> getContextForValidate(T object, MessageInterpolator messageInterpolator, ConstraintValidatorFactory constraintValidatorFactory, TraversableResolver traversableResolver) {
+	/**
+	 * whether or not we stop after the first encountered failure
+	 */
+	private final boolean failFast;
+
+	public static <T> ValidationContext<T> getContextForValidate(T object, MessageInterpolator messageInterpolator, ConstraintValidatorFactory constraintValidatorFactory, TraversableResolver traversableResolver, boolean failFast) {
 		@SuppressWarnings("unchecked")
 		Class<T> rootBeanClass = ( Class<T> ) object.getClass();
 		return new ValidationContext<T>(
-				rootBeanClass, object, messageInterpolator, constraintValidatorFactory, traversableResolver
+				rootBeanClass, object, messageInterpolator, constraintValidatorFactory, traversableResolver, failFast
 		);
 	}
 
-	public static <T> ValidationContext<T> getContextForValidateProperty(T rootBean, MessageInterpolator messageInterpolator, ConstraintValidatorFactory constraintValidatorFactory, TraversableResolver traversableResolver) {
+	public static <T> ValidationContext<T> getContextForValidateProperty(T rootBean, MessageInterpolator messageInterpolator, ConstraintValidatorFactory constraintValidatorFactory, TraversableResolver traversableResolver, boolean failFast) {
 		@SuppressWarnings("unchecked")
 		Class<T> rootBeanClass = ( Class<T> ) rootBean.getClass();
 		return new ValidationContext<T>(
-				rootBeanClass, rootBean, messageInterpolator, constraintValidatorFactory, traversableResolver
+				rootBeanClass, rootBean, messageInterpolator, constraintValidatorFactory, traversableResolver, failFast
 		);
 	}
 
-	public static <T> ValidationContext<T> getContextForValidateValue(Class<T> rootBeanClass, MessageInterpolator messageInterpolator, ConstraintValidatorFactory constraintValidatorFactory, TraversableResolver traversableResolver) {
+	public static <T> ValidationContext<T> getContextForValidateValue(Class<T> rootBeanClass, MessageInterpolator messageInterpolator, ConstraintValidatorFactory constraintValidatorFactory, TraversableResolver traversableResolver, boolean failFast) {
 		return new ValidationContext<T>(
 				rootBeanClass,
 				null,
 				messageInterpolator,
 				constraintValidatorFactory,
-				traversableResolver
+				traversableResolver,
+				failFast
 		);
 	}
 
-	private ValidationContext(Class<T> rootBeanClass, T rootBean, MessageInterpolator messageInterpolator, ConstraintValidatorFactory constraintValidatorFactory, TraversableResolver traversableResolver) {
+	private ValidationContext(Class<T> rootBeanClass, T rootBean, MessageInterpolator messageInterpolator, ConstraintValidatorFactory constraintValidatorFactory, TraversableResolver traversableResolver, boolean failFast) {
 		this.rootBean = rootBean;
 		this.rootBeanClass = rootBeanClass;
 		this.messageInterpolator = messageInterpolator;
 		this.constraintValidatorFactory = constraintValidatorFactory;
 		this.traversableResolver = traversableResolver;
+		this.failFast = failFast;
 
 		processedObjects = new HashMap<Class<?>, IdentitySet>();
 		processedPaths = new IdentityHashMap<Object, Set<PathImpl>>();
@@ -208,6 +215,10 @@ public class ValidationContext<T> {
 		for ( ConstraintViolation<T> violation : failingConstraintViolations ) {
 			addConstraintFailure( violation );
 		}
+	}
+
+	public boolean shouldFailFast() {
+		return failFast && getFailingConstraints().size() > 0;
 	}
 
 	public List<ConstraintViolation<T>> getFailingConstraints() {

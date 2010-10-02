@@ -74,4 +74,14 @@ public interface HibernateValidatorConfiguration extends Configuration<Hibernate
 	 * @throws IllegalArgumentException if {@code mapping} is {@code null}
 	 */
 	HibernateValidatorConfiguration addMapping(ConstraintMapping mapping);
+
+	/**
+	 * At the first constraint violation detected, stop immediately and only return the
+	 * first failure.
+	 *
+	 * The particular failure returned is not deterministic.
+	 *
+	 * @return {@code this} following the chaining method pattern
+	 */
+	HibernateValidatorConfiguration failFast();
 }

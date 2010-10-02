@@ -62,6 +62,7 @@ public class ValidatorFactoryImpl implements ValidatorFactory {
 	private final TraversableResolver traversableResolver;
 	private final ConstraintValidatorFactory constraintValidatorFactory;
 	private final ConstraintHelper constraintHelper;
+	private final boolean failFast;
 
 	/**
 	 * Used to cache the constraint meta data for validated entities
@@ -69,7 +70,6 @@ public class ValidatorFactoryImpl implements ValidatorFactory {
 	private final BeanMetaDataCache beanMetaDataCache;
 
 	public ValidatorFactoryImpl(ConfigurationState configurationState) {
-
 		this.messageInterpolator = configurationState.getMessageInterpolator();
 		this.constraintValidatorFactory = configurationState.getConstraintValidatorFactory();
 		this.traversableResolver = configurationState.getTraversableResolver();
@@ -86,6 +86,10 @@ public class ValidatorFactoryImpl implements ValidatorFactory {
 			if ( hibernateSpecificConfig.getMapping() != null ) {
 				initProgrammaticConfiguration( hibernateSpecificConfig.getMapping() );
 			}
+			this.failFast = hibernateSpecificConfig.getFailFast();
+		}
+		else {
+			this.failFast = false;
 		}
 	}
 
@@ -115,7 +119,8 @@ public class ValidatorFactoryImpl implements ValidatorFactory {
 				messageInterpolator,
 				traversableResolver,
 				constraintHelper,
-				beanMetaDataCache
+				beanMetaDataCache,
+				failFast
 		);
 	}
 
