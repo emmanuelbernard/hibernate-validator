@@ -19,6 +19,20 @@ import static org.hibernate.validator.test.util.TestUtil.assertNumberOfViolation
  * @author Emmanuel Bernard
  */
 public class FailFastTest {
+
+	@Test
+	public void testFailFastSetOnValidatorFactoryViaProperty() {
+		final HibernateValidatorConfiguration configuration = TestUtil.getConfiguration();
+		final ValidatorFactory factory = configuration.addProperty( HibernateValidatorConfiguration.FAIL_FAST, "true" )
+				.buildValidatorFactory();
+
+		final Validator validator = factory.getValidator();
+		A testInstance = new A();
+
+		Set<ConstraintViolation<A>> constraintViolations = validator.validate( testInstance );
+		assertNumberOfViolations( constraintViolations, 1 );
+	}
+
 	@Test
 	public void testFailFastSetOnValidatorFactory() {
 		final HibernateValidatorConfiguration configuration = TestUtil.getConfiguration();

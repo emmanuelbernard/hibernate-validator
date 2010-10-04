@@ -30,6 +30,11 @@ import org.hibernate.validator.resourceloading.ResourceBundleLocator;
  * @author Gunnar Morling
  */
 public interface HibernateValidatorConfiguration extends Configuration<HibernateValidatorConfiguration> {
+	/**
+	 * Property corresponding to the #failFast method.
+	 * Accepts true or false. Defaults to false.
+	 */
+	public static String FAIL_FAST = "hibernate.validator.fail_fast";
 
 	/**
 	 * <p>

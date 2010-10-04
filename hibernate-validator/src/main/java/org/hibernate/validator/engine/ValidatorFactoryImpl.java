@@ -34,6 +34,7 @@ import javax.validation.ValidatorContext;
 import javax.validation.ValidatorFactory;
 import javax.validation.spi.ConfigurationState;
 
+import org.hibernate.validator.HibernateValidatorConfiguration;
 import org.hibernate.validator.HibernateValidatorContext;
 import org.hibernate.validator.HibernateValidatorFactory;
 import org.hibernate.validator.cfg.CascadeDef;
@@ -47,6 +48,7 @@ import org.hibernate.validator.metadata.ConstraintHelper;
 import org.hibernate.validator.metadata.ConstraintOrigin;
 import org.hibernate.validator.metadata.MetaConstraint;
 import org.hibernate.validator.util.ReflectionHelper;
+import org.hibernate.validator.util.StringHelper;
 import org.hibernate.validator.util.annotationfactory.AnnotationDescriptor;
 import org.hibernate.validator.util.annotationfactory.AnnotationFactory;
 import org.hibernate.validator.xml.XmlMappingParser;
@@ -77,6 +79,7 @@ public class ValidatorFactoryImpl implements ValidatorFactory, HibernateValidato
 		this.traversableResolver = configurationState.getTraversableResolver();
 		this.constraintHelper = new ConstraintHelper();
 		this.beanMetaDataCache = new BeanMetaDataCache();
+		Boolean localFailFast = null;
 
 		// HV-302; don't load XmlMappingParser if not necessary
 		if ( !configurationState.getMappingStreams().isEmpty() ) {
@@ -88,11 +91,16 @@ public class ValidatorFactoryImpl implements ValidatorFactory, HibernateValidato
 			if ( hibernateSpecificConfig.getMapping() != null ) {
 				initProgrammaticConfiguration( hibernateSpecificConfig.getMapping() );
 			}
-			this.failFast = hibernateSpecificConfig.getFailFast();
+			if ( hibernateSpecificConfig.getFailFast() != null ) {
+				localFailFast = hibernateSpecificConfig.getFailFast();
+			}
 		}
-		else {
-			this.failFast = false;
+		if ( localFailFast == null ) {
+			final String failFastString = configurationState.getProperties()
+				.get( HibernateValidatorConfiguration.FAIL_FAST );
+			localFailFast = StringHelper.toBoolean( failFastString, false, HibernateValidatorConfiguration.FAIL_FAST);
 		}
+		this.failFast = localFailFast;
 	}
 
 	public Validator getValidator() {
