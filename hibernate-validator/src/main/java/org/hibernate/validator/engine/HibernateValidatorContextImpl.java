@@ -37,8 +37,8 @@ public class HibernateValidatorContextImpl implements HibernateValidatorContext 
 		this.failFast = failFast;
 	}
 
-	public HibernateValidatorContext failFast() {
-		failFast = true;
+	public HibernateValidatorContext failFast(boolean failFast) {
+		this.failFast = failFast;
 		return this;
 	}
 

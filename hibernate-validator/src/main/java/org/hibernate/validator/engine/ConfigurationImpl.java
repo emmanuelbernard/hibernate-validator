@@ -132,8 +132,8 @@ public class ConfigurationImpl implements HibernateValidatorConfiguration, Confi
 		return this;
 	}
 	
-	public HibernateValidatorConfiguration failFast() {
-		this.failFast = true;
+	public HibernateValidatorConfiguration failFast(boolean failFast) {
+		this.failFast = failFast;
 		return this;
 	}
 

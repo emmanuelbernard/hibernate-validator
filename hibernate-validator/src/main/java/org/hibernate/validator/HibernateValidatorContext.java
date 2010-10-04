@@ -21,7 +21,7 @@ import javax.validation.Validator;
  */
 public interface HibernateValidatorContext {
 	/**
-	 * At the first constraint violation detected, stop immediately and only return the
+	 * When true, at the first constraint violation detected, stop immediately and only return the
 	 * first failure.
 	 *
 	 * The particular failure(s) returned is not deterministic. Note that more than one failure report can be returned
@@ -29,7 +29,7 @@ public interface HibernateValidatorContext {
 	 *
 	 * @return {@code this} following the chaining method pattern
 	 */
-	HibernateValidatorContext failFast();
+	HibernateValidatorContext failFast(boolean failFast);
 
 	/**
 	 * Defines the message interpolator implementation used by the

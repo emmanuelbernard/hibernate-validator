@@ -76,7 +76,7 @@ public interface HibernateValidatorConfiguration extends Configuration<Hibernate
 	HibernateValidatorConfiguration addMapping(ConstraintMapping mapping);
 
 	/**
-	 * At the first constraint violation detected, stop immediately and only return the
+	 * When true, at the first constraint violation detected, stop immediately and only return the
 	 * first failure.
 	 *
 	 * The particular failure(s) returned is not deterministic. Note that more than one failure report can be returned
@@ -84,5 +84,5 @@ public interface HibernateValidatorConfiguration extends Configuration<Hibernate
 	 *
 	 * @return {@code this} following the chaining method pattern
 	 */
-	HibernateValidatorConfiguration failFast();
+	HibernateValidatorConfiguration failFast(boolean failFast);
 }

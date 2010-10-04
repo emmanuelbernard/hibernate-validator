@@ -22,7 +22,7 @@ public class FailFastTest {
 	@Test
 	public void testFailFastSetOnValidatorFactory() {
 		final HibernateValidatorConfiguration configuration = TestUtil.getConfiguration();
-		final ValidatorFactory factory = configuration.failFast().buildValidatorFactory();
+		final ValidatorFactory factory = configuration.failFast(true).buildValidatorFactory();
 
 		final Validator validator = factory.getValidator();
 		A testInstance = new A();
@@ -35,15 +35,21 @@ public class FailFastTest {
 	public void testFailFastSetOnValidator() {
 		final HibernateValidatorConfiguration configuration = TestUtil.getConfiguration();
 		final ValidatorFactory factory = configuration.buildValidatorFactory();
+		Validator validator = factory.getValidator();
 
-		final Validator validator =
-				factory.unwrap(HibernateValidatorFactory.class)
-					.usingHibernateContext()
-						.failFast()
-					.getValidator();
 		A testInstance = new A();
 
 		Set<ConstraintViolation<A>> constraintViolations = validator.validate( testInstance );
+		assertNumberOfViolations( constraintViolations, 2 );
+
+		validator =
+				factory.unwrap(HibernateValidatorFactory.class)
+					.usingHibernateContext()
+						.failFast(true)
+					.getValidator();
+
+
+		constraintViolations = validator.validate( testInstance );
 		assertNumberOfViolations( constraintViolations, 1 );
 	}
 
