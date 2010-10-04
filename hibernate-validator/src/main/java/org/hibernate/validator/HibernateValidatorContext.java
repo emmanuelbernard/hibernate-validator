@@ -24,7 +24,8 @@ public interface HibernateValidatorContext {
 	 * At the first constraint violation detected, stop immediately and only return the
 	 * first failure.
 	 *
-	 * The particular failure returned is not deterministic.
+	 * The particular failure(s) returned is not deterministic. Note that more than one failure report can be returned
+	 * by the provider.
 	 *
 	 * @return {@code this} following the chaining method pattern
 	 */
